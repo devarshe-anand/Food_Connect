@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: foodconnect-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: foodconnect
+      POSTGRES_PASSWORD: foodconnect
+      POSTGRES_DB: foodconnect
+    ports:
+      - "5432:5432"
+    volumes:
+      - foodconnect-postgres:/var/lib/postgresql/data
+
+volumes:
+  foodconnect-postgres:
