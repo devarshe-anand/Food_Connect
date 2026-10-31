@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  DONOR
+  NGO
+  ADMIN
+}
+
+enum OrganizationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum DonationStatus {
+  AVAILABLE
+  CLAIMED
+  COLLECTED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+model User {
+  id             String       @id @default(uuid()) @db.Uuid
+  email          String       @unique
+  passwordHash   String
+  role           UserRole
+  organizationId String?      @db.Uuid
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([organizationId])
+}
+
+model Organization {
+  id          String             @id @default(uuid()) @db.Uuid
+  name        String
+  status      OrganizationStatus @default(PENDING)
+  latitude    Float?
+  longitude   Float?
+  address     String?
+  users       User[]
+  donations   Donation[]         @relation("DonorOrganization")
+  claims      Donation[]         @relation("ClaimingOrganization")
+  createdAt   DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @db.Timestamptz(3)
+}
+
+model Donation {
+  id                       String          @id @default(uuid()) @db.Uuid
+  donorOrganizationId      String          @db.Uuid
+  donorOrganization        Organization    @relation("DonorOrganization", fields: [donorOrganizationId], references: [id])
+  claimedByOrganizationId  String?         @db.Uuid
+  claimedByOrganization    Organization?   @relation("ClaimingOrganization", fields: [claimedByOrganizationId], references: [id])
+  title                    String
+  description              String?
+  quantity                 String
+  pickupAddress            String
+  pickupLatitude           Float
+  pickupLongitude          Float
+  availableUntil           DateTime        @db.Timestamptz(3)
+  status                   DonationStatus  @default(AVAILABLE)
+  createdAt                DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime        @updatedAt @db.Timestamptz(3)
+
+  @@index([status, availableUntil])
+  @@index([donorOrganizationId])
+  @@index([claimedByOrganizationId])
+}
