@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './docs/openapi.js';
 import { logger } from './lib/logger.js';
+import { prisma } from './lib/prisma.js';
 
 export const app = express();
 
@@ -17,7 +18,15 @@ app.use((req, _res, next) => {
 });
 
 const api = express.Router();
-api.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+api.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'ok', database: 'ok' });
+  } catch (error) {
+    logger.error({ err: error }, 'database health check failed');
+    res.status(503).json({ status: 'unavailable', database: 'unavailable' });
+  }
+});
 app.use('/api/v1', api);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 

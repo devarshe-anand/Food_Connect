@@ -1,0 +1,8 @@
+.env
+backups/
+seeds/
+tests/
+migrations/
+scripts/
+README.md
+*.md

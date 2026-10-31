@@ -1,0 +1,38 @@
+services:
+  db:
+    image: foodconnect-postgres:17-postgis
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        POSTGIS_IMAGE: ${POSTGIS_IMAGE:-postgis/postgis:17-3.5}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in database/.env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in database/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in database/.env}
+      APP_DB_USER: ${APP_DB_USER:-foodconnect_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in database/.env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DB_BIND_ADDRESS:-127.0.0.1}:${DB_PORT:-5432}:5432"
+    volumes:
+      - foodconnect-postgres:/var/lib/postgresql/data
+    networks:
+      - foodconnect-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  foodconnect-internal:
+    name: foodconnect-internal
+    driver: bridge
+    internal: true
+
+volumes:
+  foodconnect-postgres:
+    name: foodconnect-postgres
